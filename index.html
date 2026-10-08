@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMS Performance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #1e293b; margin-bottom: 25px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; }
+    .card { background: #ffffff; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .card h2 { font-size: 15px; color: #334155; text-align: center; margin-top: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .table-container { margin-top: 15px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; }
+    th, td { border: 1px solid #cbd5e1; padding: 6px 4px; }
+    th { background-color: #f1f5f9; color: #475569; }
+    td:first-child, th:first-child { text-align: left; font-weight: bold; background-color: #f8fafc; }
+  </style>
+</head>
+<body>
+
+  <h1>SALES & ACTIVE OUTLET DASHBOARD</h1>
+
+  <div class="grid">
+    <!-- Chart 1: Coverage & Active Outlets -->
+    <div class="card">
+      <h2>Coverage & Active Outlet Performance</h2>
+      <canvas id="chartCoverage"></canvas>
+      <div id="tableCoverage" class="table-container"></div>
+    </div>
+
+    <!-- Chart 2: SKU & Value per Invoice -->
+    <div class="card">
+      <h2>SKU & Value per Invoice Performance</h2>
+      <canvas id="chartInvoice"></canvas>
+      <div id="tableInvoice" class="table-container"></div>
+    </div>
+  </div>
+
+  <script>
+    // URL Worker API vừa deploy của bạn
+    const API_URL = "https://dms-api.nguyen842.workers.dev";
+
+    // 1. Tải & Vẽ Biểu đồ Coverage & Active Outlet
+    async function renderCoverage() {
+      const res = await fetch(`${API_URL}?action=coverage`);
+      const data = await res.json();
+
+      const labels = data.map(d => `Tháng ${d.Month}`);
+      const coverage = data.map(d => d.coverage);
+      const active = data.map(d => d.active_outlets);
+
+      new Chart(document.getElementById('chartCoverage'), {
+        data: {
+          labels: labels,
+          datasets: [
+            { type: 'bar', label: 'Coverage', data: coverage, backgroundColor: '#2563eb', yAxisID: 'y' },
+            { type: 'line', label: 'Active Outlets', data: active, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, yAxisID: 'y1' }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { type: 'linear', position: 'left', title: { display: true, text: 'Coverage' } },
+            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Active Outlets' } }
+          }
+        }
+      });
+
+      // Tạo Bảng số liệu phía dưới
+      let html = `<table><tr><th>Metric</th>${labels.map(l => `<th>${l}</th>`).join('')}</tr>`;
+      html += `<tr><td>Coverage</td>${coverage.map(v => `<td>${v.toLocaleString()}</td>`).join('')}</tr>`;
+      html += `<tr><td>Active Outlets</td>${active.map(v => `<td>${v.toLocaleString()}</td>`).join('')}</tr></table>`;
+      document.getElementById('tableCoverage').innerHTML = html;
+    }
+
+    // 2. Tải & Vẽ Biểu đồ SKU/Invoice & Value/Invoice
+    async function renderInvoicePerformance() {
+      const res = await fetch(`${API_URL}?action=invoice_performance`);
+      const data = await res.json();
+
+      const labels = data.map(d => `Tháng ${d.Month}`);
+      const sales = data.map(d => d.total_sales_mvnd);
+      const skuPerInv = data.map(d => d.sku_per_invoice);
+      const valPerInv = data.map(d => d.value_per_invoice_mvnd);
+
+      new Chart(document.getElementById('chartInvoice'), {
+        data: {
+          labels: labels,
+          datasets: [
+            { type: 'bar', label: 'Sales (MVND)', data: sales, backgroundColor: '#93c5fd', yAxisID: 'y' },
+            { type: 'line', label: 'SKU/Invoice', data: skuPerInv, borderColor: '#ca8a04', backgroundColor: '#ca8a04', tension: 0.3, yAxisID: 'y1' },
+            { type: 'line', label: 'Value/Invoice (M)', data: valPerInv, borderColor: '#16a34a', backgroundColor: '#16a34a', tension: 0.3, yAxisID: 'y1' }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { type: 'linear', position: 'left', title: { display: true, text: 'Doanh số (Triệu VNĐ)' } },
+            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Chỉ số / Đơn' } }
+          }
+        }
+      });
+
+      // Tạo Bảng số liệu phía dưới
+      let html = `<table><tr><th>Metric</th>${labels.map(l => `<th>${l}</th>`).join('')}</tr>`;
+      html += `<tr><td>Sales (MVND)</td>${sales.map(v => `<td>${Math.round(v).toLocaleString()}</td>`).join('')}</tr>`;
+      html += `<tr><td>SKU/invoice</td>${skuPerInv.map(v => `<td>${v}</td>`).join('')}</tr>`;
+      html += `<tr><td>Value/invoice (M)</td>${valPerInv.map(v => `<td>${v}</td>`).join('')}</tr></table>`;
+      document.getElementById('tableInvoice').innerHTML = html;
+    }
+
+    renderCoverage();
+    renderInvoicePerformance();
+  </script>
+</body>
+</html>
