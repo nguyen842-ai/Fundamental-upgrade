@@ -47,7 +47,7 @@
       const res = await fetch(`${API_URL}?action=coverage`);
       const data = await res.json();
 
-      const labels = data.map(d => `Tháng ${d.Month}`);
+      const labels = data.map(d => `Tháng ${d.Month}/${d.Year}`);
       const coverage = data.map(d => d.coverage);
       const active = data.map(d => d.active_outlets);
 
