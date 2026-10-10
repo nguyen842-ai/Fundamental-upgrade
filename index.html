@@ -133,6 +133,13 @@
             const res = await fetch(`${API_URL}?action=coverage&cdm=${encodeURIComponent(cdm)}&kam=${encodeURIComponent(kam)}`);
             const data = await res.json();
 
+            // ĐOẠN MỚI THÊM: Cảm biến bắt lỗi từ Backend
+            if (data.error) {
+                console.error("Lỗi từ CSDL:", data.error);
+                alert("Lỗi hệ thống CSDL:\n" + data.error);
+                return; // Dừng lại ở đây, không chạy xuống dòng lệnh data.map bên dưới nữa
+            }
+
             const labels = data.map(d => `Tháng ${d.Month}/${d.Year}`);
             const coverage = data.map(d => d.coverage);
             const active = data.map(d => d.active_outlets);
